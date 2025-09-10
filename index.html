@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Polynomial Solver</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.11.0/math.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            flex: 1;
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .panel h2 {
+            margin-bottom: 20px;
+            color: #4a5568;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .icon {
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        #jsonInput {
+            width: 100%;
+            height: 400px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 15px;
+            resize: vertical;
+            transition: all 0.3s ease;
+            background: #f8fafc;
+        }
+
+        #jsonInput:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            background: white;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            flex: 1;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #f7fafc;
+            color: #4a5568;
+            border: 2px solid #e2e8f0;
+        }
+
+        .btn-secondary:hover {
+            background: #edf2f7;
+            transform: translateY(-1px);
+        }
+
+        .results-section {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        #results {
+            flex: 1;
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            line-height: 1.6;
+        }
+
+        .example-links {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .example-link {
+            padding: 8px 16px;
+            background: #e2e8f0;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 12px;
+            color: #4a5568;
+            transition: all 0.3s ease;
+        }
+
+        .example-link:hover {
+            background: #cbd5e0;
+            transform: translateY(-1px);
+        }
+
+        .status {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .status.show {
+            opacity: 1;
+        }
+
+        .status.success {
+            background: #c6f6d5;
+            color: #22543d;
+            border: 1px solid #9ae6b4;
+        }
+
+        .status.error {
+            background: #fed7d7;
+            color: #742a2a;
+            border: 1px solid #fc8181;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .panel {
+                padding: 20px;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+        }
+
+        .polynomial-display {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin: 15px 0;
+            font-size: 18px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .coefficient {
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 8px;
+            border-radius: 5px;
+            margin: 0 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔢 Polynomial Solver</h1>
+            <p>Solve polynomial equations from JSON data with arbitrary base conversions</p>
+        </div>
+
+        <div class="main-content">
+            <div class="panel">
+                <h2><span class="icon">📝</span>Input JSON Data</h2>
+                <textarea id="jsonInput" placeholder='Enter your JSON data here...
+
+Example:
+{
+  "keys": {
+    "n": 10,
+    "k": 7
+  },
+  "1": {
+    "base": "6",
+    "value": "13444211440455345511"
+  },
+  "2": {
+    "base": "15",
+    "value": "aed7015a346d635"
+  },
+  ...
+}'></textarea>
+                
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="solvePolynomial()">
+                        🚀 Solve Polynomial
+                    </button>
+                    <button class="btn btn-secondary" onclick="clearAll()">
+                        🗑️ Clear
+                    </button>
+                </div>
+
+                <div class="example-links">
+                    <button class="example-link" onclick="loadExample1()">Load Example 1</button>
+                    <button class="example-link" onclick="loadExample2()">Load Example 2</button>
+                    <button class="example-link" onclick="loadSimpleExample()">Simple Example</button>
+                </div>
+
+                <div id="status" class="status"></div>
+            </div>
+
+            <div class="panel">
+                <div class="results-section">
+                    <h2><span class="icon">📊</span>Results</h2>
+                    <div id="results">Ready to solve your polynomial equation! 
+
+📋 Instructions:
+1. Enter your JSON data in the left panel
+2. Click "Solve Polynomial" 
+3. View the results here
+
+The solver will:
+✅ Convert values from their specified bases to decimal
+✅ Use the first k points to solve for polynomial coefficients
+✅ Display coefficients from highest to lowest degree
+
+Try one of the example datasets to get started!</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Function to parse a value string in arbitrary base
+        function parseValue(valueStr, base) {
+            return parseInt(valueStr, base);
+        }
+
+        // Helper function to parse large numbers with BigInt fallback
+        function parseValueSafe(valueStr, base) {
+            try {
+                // Try regular parseInt first
+                const result = parseInt(valueStr, base);
+                
+                // Check if we're losing precision (number too large)
+                if (result > Number.MAX_SAFE_INTEGER) {
+                    console.warn(`Large number detected: ${result}, might lose precision`);
+                }
+                
+                return result;
+            } catch (error) {
+                throw new Error(`Cannot parse value "${valueStr}" in base ${base}`);
+            }
+        }
+
+        // Show status message
+        function showStatus(message, isSuccess = true) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status show ${isSuccess ? 'success' : 'error'}`;
+            
+            setTimeout(() => {
+                status.classList.remove('show');
+            }, 4000);
+        }
+
+        // Format polynomial for display
+        function formatPolynomial(coeffs) {
+            const degree = coeffs.length - 1;
+            let polynomial = 'P(x) = ';
+            
+            for (let i = 0; i < coeffs.length; i++) {
+                const coeff = coeffs[i];
+                const power = degree - i;
+                
+                if (i > 0 && coeff >= 0) polynomial += ' + ';
+                else if (coeff < 0) polynomial += ' - ';
+                
+                const absCoeff = Math.abs(coeff);
+                
+                if (power === 0) {
+                    polynomial += `<span class="coefficient">${absCoeff}</span>`;
+                } else if (power === 1) {
+                    polynomial += absCoeff === 1 ? 'x' : `<span class="coefficient">${absCoeff}</span>x`;
+                } else {
+                    polynomial += absCoeff === 1 ? `x^${power}` : `<span class="coefficient">${absCoeff}</span>x^${power}`;
+                }
+            }
+            
+            return polynomial;
+        }
+
+        // Main solving function
+        function solvePolynomial() {
+            const input = document.getElementById('jsonInput').value.trim();
+            const resultsDiv = document.getElementById('results');
+            
+            if (!input) {
+                showStatus('Please enter JSON data first!', false);
+                return;
+            }
+
+            // Show loading
+            resultsDiv.innerHTML = '<div class="loading"></div>Solving polynomial equation...';
+            
+            try {
+                // Parse JSON
+                const jsonData = JSON.parse(input);
+                
+                if (!jsonData.keys || !jsonData.keys.n || !jsonData.keys.k) {
+                    throw new Error('Invalid JSON format: missing keys.n or keys.k');
+                }
+
+                const n = jsonData.keys.n;
+                const k = jsonData.keys.k;
+                const m = k - 1;
+
+                let output = `🔍 Analysis:\n`;
+                output += `   Total points available (n): ${n}\n`;
+                output += `   Points needed (k): ${k}\n`;
+                output += `   Polynomial degree: ${m}\n\n`;
+
+                // Convert all points to decimal
+                const points = [];
+                let pointCount = 0;
+                
+                for (let key in jsonData) {
+                    if (key === "keys") continue;
+                    
+                    const base = parseInt(jsonData[key].base);
+                    const valueStr = jsonData[key].value.toLowerCase();
+                    
+                    if (base < 2 || base > 36) {
+                        throw new Error(`Invalid base ${base} for point ${key}. Base must be between 2 and 36.`);
+                    }
+                    
+                    const value = parseValueSafe(valueStr, base);
+                    const x = parseInt(key);
+                    points.push({ x, y: value, originalBase: base, originalValue: valueStr });
+                    pointCount++;
+                }
+
+                if (pointCount < k) {
+                    throw new Error(`Not enough points! Need ${k} points but only ${pointCount} provided.`);
+                }
+
+                // Sort points by x and take first k points
+                points.sort((a, b) => a.x - b.x);
+                const selected = points.slice(0, k);
+
+                output += `📊 Points used for calculation:\n`;
+                selected.forEach(point => {
+                    output += `   Point ${point.x}: ${point.originalValue} (base ${point.originalBase}) = ${point.y}\n`;
+                });
+                output += `\n`;
+
+                // Build matrix and vector
+                const A = [];
+                const b = [];
+                
+                for (const point of selected) {
+                    const row = [];
+                    for (let power = m; power >= 0; power--) {
+                        row.push(Math.pow(point.x, power));
+                    }
+                    A.push(row);
+                    b.push(point.y);
+                }
+
+                // Solve using math.js
+                const coeffs = math.lusolve(A, b);
+                
+                // Flatten and round to integers if possible
+                const result = coeffs.map(entry => {
+                    let val = math.number(entry[0]);
+                    if (Math.abs(val - Math.round(val)) < 1e-6) {
+                        val = Math.round(val);
+                    }
+                    return val;
+                });
+
+                output += `🎯 Polynomial Coefficients (highest to lowest degree):\n`;
+                output += `   [${result.join(', ')}]\n\n`;
+
+                // Calculate constant term (secret)
+                const constantTerm = result[result.length - 1];
+                output += `🔐 Secret (constant term): ${constantTerm}\n\n`;
+
+                // Verification with all points
+                output += `✅ Verification:\n`;
+                let allMatch = true;
+                
+                for (const point of selected) {
+                    let calculatedY = 0;
+                    for (let i = 0; i < result.length; i++) {
+                        const power = m - i;
+                        calculatedY += result[i] * Math.pow(point.x, power);
+                    }
+                    
+                    const match = Math.abs(calculatedY - point.y) < 1e-6;
+                    output += `   P(${point.x}) = ${Math.round(calculatedY)} ${match ? '✓' : '✗'} (expected: ${point.y})\n`;
+                    if (!match) allMatch = false;
+                }
+
+                if (allMatch) {
+                    output += `\n🎉 All points verified successfully!`;
+                } else {
+                    output += `\n⚠️ Some points don't match - check your input data.`;
+                }
+
+                // Display polynomial equation
+                const polynomialHtml = `<div class="polynomial-display">${formatPolynomial(result)}</div>`;
+                
+                resultsDiv.innerHTML = output + polynomialHtml;
+                showStatus('Polynomial solved successfully!', true);
+
+            } catch (error) {
+                resultsDiv.innerHTML = `❌ Error: ${error.message}\n\nPlease check your JSON format and try again.`;
+                showStatus(`Error: ${error.message}`, false);
+            }
+        }
+
+        // Clear all inputs and results
+        function clearAll() {
+            document.getElementById('jsonInput').value = '';
+            document.getElementById('results').innerHTML = `Ready to solve your polynomial equation! 
+
+📋 Instructions:
+1. Enter your JSON data in the left panel
+2. Click "Solve Polynomial" 
+3. View the results here
+
+The solver will:
+✅ Convert values from their specified bases to decimal
+✅ Use the first k points to solve for polynomial coefficients
+✅ Display coefficients from highest to lowest degree
+
+Try one of the example datasets to get started!`;
+            
+            const status = document.getElementById('status');
+            status.classList.remove('show');
+        }
+
+        // Example data sets
+        function loadExample1() {
+            const example = {
+                "keys": {
+                    "n": 4,
+                    "k": 3
+                },
+                "1": {
+                    "base": "10",
+                    "value": "4"
+                },
+                "2": {
+                    "base": "2",
+                    "value": "111"
+                },
+                "3": {
+                    "base": "10",
+                    "value": "12"
+                },
+                "6": {
+                    "base": "4",
+                    "value": "213"
+                }
+            };
+            document.getElementById('jsonInput').value = JSON.stringify(example, null, 2);
+        }
+
+        function loadExample2() {
+            const example = {
+                "keys": {
+                    "n": 10,
+                    "k": 7
+                },
+                "1": {
+                    "base": "6",
+                    "value": "13444211440455345511"
+                },
+                "2": {
+                    "base": "15",
+                    "value": "aed7015a346d635"
+                },
+                "3": {
+                    "base": "15",
+                    "value": "6aeeb69631c227c"
+                },
+                "4": {
+                    "base": "16",
+                    "value": "e1b5e05623d881f"
+                },
+                "5": {
+                    "base": "8",
+                    "value": "316034514573652620673"
+                },
+                "6": {
+                    "base": "3",
+                    "value": "2122212201122002221120200210011020220200"
+                },
+                "7": {
+                    "base": "3",
+                    "value": "20120221122211000100210021102001201112121"
+                },
+                "8": {
+                    "base": "6",
+                    "value": "20220554335330240002224253"
+                },
+                "9": {
+                    "base": "12",
+                    "value": "45153788322a1255483"
+                },
+                "10": {
+                    "base": "7",
+                    "value": "1101613130313526312514143"
+                }
+            };
+            document.getElementById('jsonInput').value = JSON.stringify(example, null, 2);
+        }
+
+        function loadSimpleExample() {
+            const example = {
+                "keys": {
+                    "n": 3,
+                    "k": 3
+                },
+                "1": {
+                    "base": "10",
+                    "value": "3"
+                },
+                "2": {
+                    "base": "10",
+                    "value": "5"
+                },
+                "3": {
+                    "base": "10",
+                    "value": "9"
+                }
+            };
+            document.getElementById('jsonInput').value = JSON.stringify(example, null, 2);
+        }
+
+        // Allow Enter key to solve (Ctrl+Enter)
+        document.getElementById('jsonInput').addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                solvePolynomial();
+            }
+        });
+    </script>
+</body>
+</html>
